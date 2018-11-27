@@ -4,6 +4,7 @@ ntopng是基于高速网络的流量分析和流量收集，是对网络流量�
 ## 1. ntopng 的安装
 在已经编写好的Dcokerfile、startup.sh文件所在的目录下运行命令
 >docker build -t ntop .
+
 >docker run -ti --privileged ntop -p 23000:3000
 
 运行完成后，在浏览器的地址栏中输入 localhost:23000,可以进入到ntopng的web界面。
