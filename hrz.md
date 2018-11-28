@@ -48,10 +48,11 @@ ASNs表示的是自治系统
 ### 3.3 Flows
 Flows通过五元组进行唯一地识别
 >Source IP address
-
 >destination IP address
+
 >Source Port 
 >destination port
+
 >Layer-4 protocol
 
 流表中有多个信息字段：Application（应用程序）、Layer-4 Protocol(第四层协议）、Client(客户端）、Sever hosts(服务器主机）、Duration(持续时间）、Breakdown(客户端和服务器故障）、ActualThpt(实时传输速率）、Total Bytes(总字节）、Additional Information(附加信息）。
