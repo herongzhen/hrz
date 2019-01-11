@@ -317,6 +317,23 @@ typedef struct ndpi_detection_module_struct {
     #define NDPI_DEL_PROTOCOL_FROM_BITMASK(bmask,value)   NDPI_CLR(&bmask,value)
     #define NDPI_COMPARE_PROTOCOL_TO_BITMASK(bmask,value) NDPI_ISSET(&bmask,value)
     #define NDPI_SAVE_AS_BITMASK(bmask,value)  { NDPI_ZERO(&bmask) ; NDPI_ADD_PROTOCOL_TO_BITMASK(bmask, value); }
-    
 
-
+##### 3.ndpi_set_detection_bitmask2(ndpi_struct,&all)
+   
+   这一部分是检测协议注册的核心函数,其中掺杂着一些协议之间的依赖关系,列举部分代码段研究其具体的工作原理
+   
+       #ifdef NDPI_PROTOCOL_SNMP //SNMP是一个网络管理协议
+         if (NDPI_COMPARE_PROTOCOL_TO_BITMASK(*detection_bitmask, NDPI_PROTOCOL_SNMP) != 0) {
+	         //我们在上面第2点中介绍了NDPI_COMPARE_PROTOCOL_TO_BITMASK的具体实现，如果我们有注册这个协议进入if语句里面
+	         ndpi_struct->callback_buffer[a].func = ndpi_search_snmp;
+		         //这一步是非常核心的，它为SNMP协议注册了检测函数ndpi_search_snmp。这里的callback_buffer是在ndpi_detection_module_struct结构体中定义
+		         ndpi_struct->callback_buffer[a].ndpi_selection_bitmask = NDPI_SELECTION_BITMASK_PROTOCOL_V4_V6_UDP_WITH_PAYLOAD;
+			     
+			         NDPI_SAVE_AS_BITMASK(ndpi_struct->callback_buffer[a].detection_bitmask, NDPI_PROTOCOL_UNKNOWN);
+				         //从第2点的实现不难知道，这里是把原来的detection_bitmask表清空。并注册NDPI_PROTOCOL_UNKNOWN。
+				         //但是这里需要主要的是callback_buffer[a]，所以这个清空的映射表是针对SNMP协议，而不是全部协议的映射记录表
+				         NDPI_SAVE_AS_BITMASK(ndpi_struct->callback_buffer[a].excluded_protocol_bitmask, NDPI_PROTOCOL_SNMP);
+					         //同理，这里清空excluded_protocol_bitmask映射表，并注册NDPI_PROTOCOL_SNMP协议
+					         a++;//next
+						       }
+    #endif
