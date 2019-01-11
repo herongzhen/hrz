@@ -40,15 +40,20 @@ i<file.pcap|device>  |指定一个需要被识别的pcap文件/文件列表，�
 -w<path>               |指定测试信息的输出文件
 -h                     | help信息
 -v<1|2|3>              |按级别进一步打印包的详细信息，分为1、2、3级
-##四.ndpi的使用
-###ndpi协议识别总体概述
+
+## 四.ndpi的使用
+
+###  ndpi协议识别总体概述
+
 结构初始化 &nbsp;ndpi_workflow_init
 协议模块加载&nbsp;ndpi_init_protocol_defaults
 协议识别算法注册&nbsp; ndpi_set_protocol_detection_bitmask2
 进行协议识别,流量分类&nbsp;ndpi_detection_process_packet
 针对未能识别的协议进行协议猜测 &nbsp;ndpi_guess_protocol_id
 产生协议识别结果,记录在结构体中&nbsp; ndpi_flow_struct
-###ndpi的工作流程
+
+###  ndpi的工作流程
+
 &nbsp;&nbsp;首先是程序的初始化，调用setupDetection()函数.
 &nbsp;&nbsp;接下来会开启线程调用libpcap库函数对通过电脑网卡的数据包进行抓取，或者读取传入的.pcap文件. 
 &nbsp;&nbsp;接下来对每一个数据包（数据包(packet)和数据流(flow)，一个数据流中可能会有很多个数据包，就像我们申请一个网页请求，由于页面信息很大，所以会分成很多个数据包来传输，但这些数据包同属于一个数据流），首先对其数据链路层和IP层进行拆包分析pcap_packet_callback()函数，判断是否为基于IP协议等，并获得其源目的IP、协议类型等。 
@@ -92,7 +97,8 @@ i<file.pcap|device>  |指定一个需要被识别的pcap文件/文件列表，�
         }
 
    
-###分析函数API的实现
+###  分析函数API的实现
+
 ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的API,函数原型如下:
 
 
@@ -138,7 +144,7 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
 ndpi中通过flow->l4.tcp中的seen_syn、seen_syn_ack和seen_ack记录tcp的握手状态。然后根据分析报文中的syn和ack字段进行归类，为后期的检测提供数据基础。
 
     
-###ndpi如何定义一个协议
+###  ndpi如何定义一个协议
 ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册定义.在代码中用宏定义了所有能够支持的协议
 部分代码如下:
 
@@ -155,7 +161,7 @@ typedef enum {
   NDPI_PROTOCOL_SINA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=200,
   }
   具体完整代码可在nDPI/src/include/ndpi_protocol_ids.h中查看.
-###ndpi解析流的流程
+### ndpi解析流的流程
 1.高层应用把三,四层的数据交给nDPI;
 2.nDPI根据,默认端口和承载协议尝试猜测应用协议,并使用猜出来的协议解析器按顺序尝试就解析,如果解析成功,返回结果.如果不成功,就进行下一步.
 3.根据承载协议使用该承载协议分类下的全部协议解析其按顺序尝试解析(比如流是基于TCP,就用和TCP有关的解析器解析,而不会考虑UDP),如果成功,返回结果,不成功,就下一步.
@@ -164,8 +170,8 @@ typedef enum {
 流使用不同的承载协议还有某些软件在开始传输数据之前会进行协商或者其他的处理,这些都是可以作为参照的流量特征.影响DPI引擎的性能的因素主要是支持的协议数量和流元数据的抽取,因为在识别的流程中,nDPI先根据端口或者url猜测可能的协议种类并解析器尝试解析,如果猜测不对就按照解析器的注册顺序解析直到有一个解析成功;
 完成分析
 调用完ndpi_detection_process_packet函数后我们需要检查返回值,如果不等于NDPI_PROTOCOL_UNKNOWN就证明找到了协议类型.
-###ndpi中重要的函数结构
-####1.ndpi_detection_module_struct
+### ndpi中重要的函数结构
+#### 1.ndpi_detection_module_struct
 主要用于存储一些全局变量,由ndpi_init_detection_module()函数在初始化的过程中返回.结构体定义如下:
 
 typedef struct ndpi_detection_module_struct {
@@ -198,7 +204,7 @@ typedef struct ndpi_detection_module_struct {
   u_int8_t direction_detect_disable:1; /* disable internal detection of packet direction */
 } ndpi_detection_module_struct_t;
 
-####2.ndpi_packet_struct
+#### 2.ndpi_packet_struct
     这个结构体主要用于存储一个数据包的相关信息
         typedef struct ndpi_packet_struct {
       const struct ndpi_iphdr *iph;//ip层信息
@@ -225,7 +231,7 @@ typedef struct ndpi_detection_module_struct {
       u_int8_t packet_lines_parsed_complete:1,    packet_direction:1,//源到目的、目的到源
         empty_line_position_set:1;
     } ndpi_packet_struct_t;
-####3.ndpi_flow_struct
+#### 3.ndpi_flow_struct
 这个结构体用于存储一个数据流的相关信息,一个数据流可能会有很多数据包.所以在这个结构体中定义了很多标识变量(有出生初始赋值),用于区别不同的数据包和减少重复多余的工作
 
     typedef struct ndpi_flow_struct {
@@ -266,8 +272,8 @@ typedef struct ndpi_detection_module_struct {
       struct ndpi_id_struct *dst;
     } ndpi_flow_struct_t;
 
-###ndpi_set_protocol_detection_bitmask2
-####1.NDPI_PROTOCOL_BITMASK all
+### ndpi_set_protocol_detection_bitmask2
+#### 1.NDPI_PROTOCOL_BITMASK all
 这里的NDPI_PROTOCOL_BITMASK代表的是一个变量类型,而all则是一个定义的实例(变量),详细定义,如下
 
     typedef u_int32_t ndpi_ndpi_mask;
@@ -288,7 +294,7 @@ typedef struct ndpi_detection_module_struct {
  
    这里维护协议映射的数据结构是上面提到的ndpi_protocol_bitmask_struct（u_int32_t的数组）。对于数组的每一个位置比如fds_bits[1]，这u_int32_t一共有4字节。也就事32位，每位代表这一个协议的映射。这一点不仅可以从上面的定义看出，在接下来的第2部分将更明显地可以看到这是一个类似hash的映射结构。然后回到为什么要(((x)+((y)-1))/(y))的问题，这里的y其实就是32，所以这里这样计算数组是为了得出一个恰好满足能存放协议映射的数组大小（当然数组的位数不是全部应用与映射，毕竟会有一点空间的浪费）
 
-####2.NDPI_BITMASK_SET_ALL(all)
+#### 2.NDPI_BITMASK_SET_ALL(all)
 这个宏定义的作用是把映射中的所有应用都进行设置
 
     #define NDPI_SET(p, n)    ((p)->fds_bits[(n)/NDPI_BITS] |= (1 << (((u_int32_t)n) % NDPI_BITS)))
