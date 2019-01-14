@@ -15,11 +15,9 @@ i. 编译
 ./autogen.sh
 ./configure
 make
-
 ii. 测试
 cd tests/
 ./do.sh
-
 iii. 安装
 make install (需要root权限）
 iv.例子工具
@@ -27,22 +25,22 @@ iv.例子工具
 输入： ./ndpiReader -h 可以查看关于ndpi使用命令行时的一些参数的解析
 
 Usage:
-i<file.pcap|device>  |指定一个需要被识别的pcap文件/文件列表，或者需要被嗅探的设备接口/接口列表(文件列表或接口列表使用","作为分隔符)
--f<BPF filter>         |指定一条BPF规则的过滤字串
--s<duration>           |最大的嗅探时间(显然只在嗅探接口时生效)
--m<duration>           | pcap文件分段解析超时时间(显然只在解析pcap文件时生效)
--p<file>.protos        |指定一个自定义的协议识别配置文件(eg.protos.txt)
--l<num loops>          |指定循环执行嗅探的次数(仅用于测试)
--n<num threads>        |指定线程数量，缺省跟设备接口数量对应                     |如果传入的是pcap文件时固定使用单线程
--j<file.json>          |指定一个输出包内容的json文件
--g<id:id...>           |指定线程-CPU亲和关系映射表
--d                     |禁止协议猜测功能
--q                     |安静模式，意味着不打印信息
--t                     |解析GTP隧道协议
--r                     |打印 nDPI版本和git版本
--w<path>               |指定测试信息的输出文件
--h                     | help信息
--v<1|2|3>              |按级别进一步打印包的详细信息，分为1、2、3级
+ i<file.pcap|device>  |指定一个需要被识别的pcap文件/文件列表，或者需要被嗅探的设备接口/接口列表(文件列表或接口列表使用","作为分隔符)
+ -f<BPF filter>         |指定一条BPF规则的过滤字串
+ -s<duration>           |最大的嗅探时间(显然只在嗅探接口时生效)
+ -m<duration>           | pcap文件分段解析超时时间(显然只在解析pcap文件时生效)
+ -p<file>.protos        |指定一个自定义的协议识别配置文件(eg.protos.txt)
+ -l<num loops>          |指定循环执行嗅探的次数(仅用于测试)
+ -n<num threads>        |指定线程数量，缺省跟设备接口数量对应                     |如果传入的是pcap文件时固定使用单线程
+ -j<file.json>          |指定一个输出包内容的json文件
+ -g<id:id...>           |指定线程-CPU亲和关系映射表
+ -d                     |禁止协议猜测功能
+ -q                     |安静模式，意味着不打印信息
+ -t                     |解析GTP隧道协议
+ -r                     |打印 nDPI版本和git版本
+ -w<path>               |指定测试信息的输出文件
+ -h                     | help信息
+ -v<1|2|3>              |按级别进一步打印包的详细信息，分为1、2、3级
 
 ## 四.ndpi的使用
 
