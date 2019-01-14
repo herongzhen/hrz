@@ -62,7 +62,8 @@ Usage:<br>
 
     idx = (vlan_id + lower_ip + upper_ip + iph->protocol + lower_port + upper_port) % NUM_ROOTS;
     ret = ndpi_tfind(&flow, &ndpi_thread_info[thread_id].ndpi_flows_root[idx], node_cmp);
-程序定义了一个数组，用来记录所有的数据流，而idx是用来标识不同的数据流，根据前面解析出数据包的五元组计算idx，然后查询 ndpi_flows_root[]这个数组在索引为idx位置是否已经有了记录。一般，对于一个数据流而言，该流的第一个数据包查询时,ndpi_flows_root[idx]为空，则建立一个新的ndpi_flow对象并保存到该位置处；等抓到该数据流的后续数据包时，因为属于同一个流(即idx相同)，所以ndpi_flows_root[idx]不为空，则直接返回已经有的ndpi_flow即可。至此，我们得到了ndpi_flow这个结构体.<br>
+程序定义了一个数组，用来记录所有的数据流，而idx是用来标识不同的数据流，根据前面解析出数据包的五元组计算idx，然后查询 ndpi_flows_root[]这个数组在索引为idx位置是否已经有了记录。<br>
+一般，对于一个数据流而言，该流的第一个数据包查询时,ndpi_flows_root[idx]为空，则建立一个新的ndpi_flow对象并保存到该位置处；等抓到该数据流的后续数据包时，因为属于同一个流(即idx相同)，所以ndpi_flows_root[idx]不为空，则直接返回已经有的ndpi_flow即可。至此，我们得到了ndpi_flow这个结构体.<br>
 接下来函数会调用ndpi_detection_process_packet()这个函数进行应用层分析。这也是应用协议分析的主体函数.这个函数传进的参数是ndpi_flow_struct(下面记为flow)，函数首先会对flow->packet即对packet这个结构体进行初始化。因为对于同一个流flow而言，在该结构体中有些变量在第一个数据包时已经初始化了，这些变量可能在特定情况下才会发生改变，比如检测出了协议等；而对每一个数据包，flow中必须要变的就是flow->packet中的信息。接下来会调用ndpi_connection_tracking()函数，这个函数的主要作用是判断这个包的‘位置’,这个函数在数据包重组等功能中会有很重要的作用。部分代码如下`   
 
     if(tcph->syn != 0 && tcph->ack == 0 && flow->l4.tcp.seen_syn == 0 && flow->l4.tcp.seen_syn_ack == 0
