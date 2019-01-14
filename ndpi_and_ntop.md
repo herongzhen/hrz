@@ -8,19 +8,21 @@ nDPI是一个从OpenDPI发展而来的DPI库，现在由ntop组织负责维护�
 5. nDPI实现了线程安全
 6. 实现了加密流量的解析
 ## 二.主要功能
- 1.核心库用于处理数据包抽取基本信息
+ 1.核心库用于处理数据包抽取基本信息<br>
  2.解析器用插件的方式实现，用于解析报文检测的协议类别
 ## 三.nDPI的安装
-i. 编译
+
+首先下载所需代码库 :git clone https://github.com/ntop/nDPI.git  <br>
+i. 编译<br>
 ./autogen.sh
 ./configure
 make<br>
-ii. 测试
+ii. 测试<br>
 cd tests/
 ./do.sh<br>
-iii. 安装
+iii. 安装<br>
 make install (需要root权限）<br>
-iv.例子工具
+iv.例子工具<br>
 在example中有一个已经编译好的例子ndpiReader
 输入： ./ndpiReader -h 可以查看关于ndpi使用命令行时的一些参数的解析
 
@@ -121,6 +123,7 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
  1.检测包长度
  
   这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用ndpi_int_reset_packet_protocol把flow内部的协议栈顶类型置为UNKNOW。并且清0协议栈信息字段，最后返回UNKNOW类型。
+ 
  2、flow->packet的初始化
  
      这里通过捕获的ip报文（packet参数）和用户设置的current_tick参数，对flow->packet.iph和flow->packet.tick_timestamp进行初始化。
