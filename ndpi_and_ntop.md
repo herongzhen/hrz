@@ -118,17 +118,18 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
         //ndpi_id_struct里面包含各个协议的源目的端信息
     
  1.检测包长度
-        这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用ndpi_int_reset_packet_protocol把flow内部的协议栈顶类型置为UNKNOW。并且清0协议栈信息字段，最后返回UNKNOW类型。
-        2、flow->packet的初始化
-        这里通过捕获的ip报文（packet参数）和用户设置的current_tick参数，对flow->packet.iph和flow->packet.tick_timestamp进行初始化。
-        3、传输层检测及flow的初始化
-        这里主要通过函数ndpi_init_packet_header（在ndpi_main.c中进行了定义）进行了实现，他完成比较多的工作。
+ 
+这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用ndpi_int_reset_packet_protocol把flow内部的协议栈顶类型置为UNKNOW。并且清0协议栈信息字段，最后返回UNKNOW类型。
+ 2、flow->packet的初始化
+     这里通过捕获的ip报文（packet参数）和用户设置的current_tick参数，对flow->packet.iph和flow->packet.tick_timestamp进行初始化。
+ 3、传输层检测及flow的初始化
+     这里主要通过函数ndpi_init_packet_header（在ndpi_main.c中进行了定义）进行了实现，他完成比较多的工作。
         1）首先一个就是根据ndpi_packet_struct中的协议栈内容和描述信息，对flow的协议栈内容和描述信息进行了初始化。这部分通过内部的ndpi_apply_flow_protocol_to_packet函数进行了实现。
         2）根据ipv4和ipv6对flow中的packet分别进行初始化（flow->packet.iph和flow->packet.iphv6）
         3）通过ndpi_detection_get_l4_internal对报文的ipv4（ipv6）header进行检测，并且获取传输层协议信息。通过l4protocol变量进行传递，记录传输层协议号。
         4）根据l4protocol字段进行传输层的判别，如果是tcp（协议号是6）则对包内部的syn和ack等字段进行初步的检测。如果是udp（协议号是17），则计算出包的长度。初始化flow->packet当中的字段
-        4、flow传输层信息的初始化
-        这里主要通过报文获取传输层信息，比如在tcp协议中我们捕获到的报文是握手中的什么角色，是ack包还是其他的。这些信息将对检测提供一些数据。
+  4、flow传输层信息的初始化
+     这里主要通过报文获取传输层信息，比如在tcp协议中我们捕获到的报文是握手中的什么角色，是ack包还是其他的。这些信息将对检测提供一些数据。
         1）首先通过src和dst参数初始化flow->src和flow->dst字段
         2）通过ndpi_connection_tracking函数进行我们上述的工作。这里它判断的tcp握手的状态，并且通过flow->next_tcp_seq_nr数组对tcp序列进行了描述。
 
@@ -146,6 +147,7 @@ ndpi中通过flow->l4.tcp中的seen_syn、seen_syn_ack和seen_ack记录tcp的握
 
     
 ###  4.ndpi如何定义一个协议
+
 ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册定义.在代码中用宏定义了所有能够支持的协议
 部分代码如下:
 
@@ -158,11 +160,12 @@ typedef enum {
   NDPI_PROTOCOL_SSDP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=12,
   NDPI_PROTOCOL_QQ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=48,
   NDPI_PROTOCOL_MSN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=68,
-  NDPI_PROTOCOL_YAHOO&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=70,
   NDPI_PROTOCOL_SINA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=200,
   }
   具体完整代码可在nDPI/src/include/ndpi_protocol_ids.h中查看.
+
 ### 5.ndpi解析流的流程
+
 1.高层应用把三,四层的数据交给nDPI;
 2.nDPI根据,默认端口和承载协议尝试猜测应用协议,并使用猜出来的协议解析器按顺序尝试就解析,如果解析成功,返回结果.如果不成功,就进行下一步.
 3.根据承载协议使用该承载协议分类下的全部协议解析其按顺序尝试解析(比如流是基于TCP,就用和TCP有关的解析器解析,而不会考虑UDP),如果成功,返回结果,不成功,就下一步.
@@ -174,6 +177,7 @@ typedef enum {
 ### 6.ndpi中重要的函数结构
 
 #### 1.ndpi_detection_module_struct
+
 主要用于存储一些全局变量,由ndpi_init_detection_module()函数在初始化的过程中返回.结构体定义如下:
 
 typedef struct ndpi_detection_module_struct {
@@ -207,6 +211,7 @@ typedef struct ndpi_detection_module_struct {
 } ndpi_detection_module_struct_t;
 
 #### 2.ndpi_packet_struct
+
     这个结构体主要用于存储一个数据包的相关信息
         typedef struct ndpi_packet_struct {
       const struct ndpi_iphdr *iph;//ip层信息
@@ -234,6 +239,7 @@ typedef struct ndpi_detection_module_struct {
         empty_line_position_set:1;
     } ndpi_packet_struct_t;
 #### 3.ndpi_flow_struct
+
 这个结构体用于存储一个数据流的相关信息,一个数据流可能会有很多数据包.所以在这个结构体中定义了很多标识变量(有出生初始赋值),用于区别不同的数据包和减少重复多余的工作
 
     typedef struct ndpi_flow_struct {
@@ -275,7 +281,9 @@ typedef struct ndpi_detection_module_struct {
     } ndpi_flow_struct_t;
 
 #### 4.ndpi_set_protocol_detection_bitmask2
+
 ##### 1.NDPI_PROTOCOL_BITMASK all
+
 这里的NDPI_PROTOCOL_BITMASK代表的是一个变量类型,而all则是一个定义的实例(变量),详细定义,如下
 
     typedef u_int32_t ndpi_ndpi_mask;
@@ -331,7 +339,7 @@ typedef struct ndpi_detection_module_struct {
 		         ndpi_struct->callback_buffer[a].ndpi_selection_bitmask = NDPI_SELECTION_BITMASK_PROTOCOL_V4_V6_UDP_WITH_PAYLOAD;
 			     
 			         NDPI_SAVE_AS_BITMASK(ndpi_struct->callback_buffer[a].detection_bitmask, NDPI_PROTOCOL_UNKNOWN);
-				         //从第2点的实现不难知道，这里是把原来的detection_bitmask表清空。并注册NDPI_PROTOCOL_UNKNOWN。
+				         //这里是把原来的detection_bitmask表清空。并注册NDPI_PROTOCOL_UNKNOWN。
 				         //但是这里需要主要的是callback_buffer[a]，所以这个清空的映射表是针对SNMP协议，而不是全部协议的映射记录表
 				         NDPI_SAVE_AS_BITMASK(ndpi_struct->callback_buffer[a].excluded_protocol_bitmask, NDPI_PROTOCOL_SNMP);
 					         //同理，这里清空excluded_protocol_bitmask映射表，并注册NDPI_PROTOCOL_SNMP协议
