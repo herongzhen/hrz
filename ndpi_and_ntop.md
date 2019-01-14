@@ -55,14 +55,14 @@ Usage:<br>
 
 ###  2.ndpi的工作流程
 
-&nbsp;&nbsp;首先是程序的初始化，调用setupDetection()函数.
-&nbsp;&nbsp;接下来会开启线程调用libpcap库函数对通过电脑网卡的数据包进行抓取，或者读取传入的.pcap文件. 
-&nbsp;&nbsp;接下来对每一个数据包（数据包(packet)和数据流(flow)，一个数据流中可能会有很多个数据包，就像我们申请一个网页请求，由于页面信息很大，所以会分成很多个数据包来传输，但这些数据包同属于一个数据流），首先对其数据链路层和IP层进行拆包分析pcap_packet_callback()函数，判断是否为基于IP协议等，并获得其源目的IP、协议类型等。 
-在接下来调用packet_processing()函数，进行传输层分析。在进行传输层分析时调用了get_ndpi_flow()函数，该函数返回ndpi_flow这个结构体。在get_ndpi_flow()函数中获取传输层的信息如源目的端口等信息。然后根据（源目的IP、源目的端口、协议类型(tcp\udp)）这五个元素计算出idx。
+&nbsp;&nbsp;首先是程序的初始化，调用setupDetection()函数.<br>
+&nbsp;&nbsp;接下来会开启线程调用libpcap库函数对通过电脑网卡的数据包进行抓取，或者读取传入的.pcap文件.<br> 
+&nbsp;&nbsp;接下来对每一个数据包（数据包(packet)和数据流(flow)，一个数据流中可能会有很多个数据包，就像我们申请一个网页请求，由于页面信息很大，所以会分成很多个数据包来传输，但这些数据包同属于一个数据流），首先对其数据链路层和IP层进行拆包分析pcap_packet_callback()函数，判断是否为基于IP协议等，并获得其源目的IP、协议类型等。<br> 
+再接下来调用packet_processing()函数，进行传输层分析。在进行传输层分析时调用了get_ndpi_flow()函数，该函数返回ndpi_flow这个结构体。在get_ndpi_flow()函数中获取传输层的信息如源目的端口等信息。然后根据（源目的IP、源目的端口、协议类型(tcp\udp)）这五个元素计算出idx。
 
     idx = (vlan_id + lower_ip + upper_ip + iph->protocol + lower_port + upper_port) % NUM_ROOTS;
     ret = ndpi_tfind(&flow, &ndpi_thread_info[thread_id].ndpi_flows_root[idx], node_cmp);
-程序维护了一个数组，用来记录所有的数据流，而idx是用来标识不同的数据流，根据前面解析出数据包的五元组计算idx，然后查询 ndpi_flows_root[]这个数组在索引为idx位置是否已经有了记录。一般，对于一个数据流而言，该流的第一个数据包查询时ndpi_flows_root[idx]为空，则建立一个新的ndpi_flow对象并保存到该位置处；等抓到该数据流的后续数据包时，因为属于同一个流(即idx相同)，所以ndpi_flows_root[idx]不为空，则直接返回已经有的ndpi_flow即可。至此，我们得到了ndpi_flow这个结构体.
+程序定义了一个数组，用来记录所有的数据流，而idx是用来标识不同的数据流，根据前面解析出数据包的五元组计算idx，然后查询 ndpi_flows_root[]这个数组在索引为idx位置是否已经有了记录。一般，对于一个数据流而言，该流的第一个数据包查询时,ndpi_flows_root[idx]为空，则建立一个新的ndpi_flow对象并保存到该位置处；等抓到该数据流的后续数据包时，因为属于同一个流(即idx相同)，所以ndpi_flows_root[idx]不为空，则直接返回已经有的ndpi_flow即可。至此，我们得到了ndpi_flow这个结构体.<br>
 接下来函数会调用ndpi_detection_process_packet()这个函数进行应用层分析。这也是应用协议分析的主体函数.这个函数传进的参数是ndpi_flow_struct(下面记为flow)，函数首先会对flow->packet即对packet这个结构体进行初始化。因为对于同一个流flow而言，在该结构体中有些变量在第一个数据包时已经初始化了，这些变量可能在特定情况下才会发生改变，比如检测出了协议等；而对每一个数据包，flow中必须要变的就是flow->packet中的信息。接下来会调用ndpi_connection_tracking()函数，这个函数的主要作用是判断这个包的‘位置’,这个函数在数据包重组等功能中会有很重要的作用。部分代码如下`   
 
     if(tcph->syn != 0 && tcph->ack == 0 && flow->l4.tcp.seen_syn == 0 && flow->l4.tcp.seen_syn_ack == 0
@@ -125,7 +125,7 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
      这里通过捕获的ip报文（packet参数）和用户设置的current_tick参数，对flow->packet.iph和flow->packet.tick_timestamp进行初始化。
  3、传输层检测及flow的初始化
  
-     这里主要通过函数ndpi_init_packet_header（在ndpi_main.c中进行了定义）进行了实现，他完成比较多的工作。
+     这里主要通过函数ndpi_init_packet_header（在ndpi_main.c中进行了定义）进行了实现，它完成比较多的工作。
         1）首先一个就是根据ndpi_packet_struct中的协议栈内容和描述信息，对flow的协议栈内容和描述信息进行了初始化。这部分通过内部的ndpi_apply_flow_protocol_to_packet函数进行了实现。
         2）根据ipv4和ipv6对flow中的packet分别进行初始化（flow->packet.iph和flow->packet.iphv6）
         3）通过ndpi_detection_get_l4_internal对报文的ipv4（ipv6）header进行检测，并且获取传输层协议信息。通过l4protocol变量进行传递，记录传输层协议号。
@@ -155,28 +155,30 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
 部分代码如下:
 
 typedef enum {
-  NDPI_PROTOCOL_UNKNOWN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=0,
-  NDPI_PROTOCOL_FTP_CONTROL&nbsp;=1,
-  NDPI_PROROCOL_MAIL_SMTP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=3,
-  NDPI_PROTOCOL_DNS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=5,
-  NDPI_PROTOCOL_HTTP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=7,
-  NDPI_PROTOCOL_SSDP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=12,
-  NDPI_PROTOCOL_QQ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=48,
-  NDPI_PROTOCOL_MSN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=68,
-  NDPI_PROTOCOL_SINA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=200,
+  NDPI_PROTOCOL_UNKNOWN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=0,<br>
+  NDPI_PROTOCOL_FTP_CONTROL&nbsp;=1,<br>
+  NDPI_PROROCOL_MAIL_SMTP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=3,<br>
+  NDPI_PROTOCOL_DNS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=5,<br>
+  NDPI_PROTOCOL_HTTP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=7,<br>
+  NDPI_PROTOCOL_SSDP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=12,<br>
+  NDPI_PROTOCOL_QQ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=48,<br>
+  NDPI_PROTOCOL_MSN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=68,<br>
+  NDPI_PROTOCOL_SINA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=200,<br>
   }
+  
   具体完整代码可在nDPI/src/include/ndpi_protocol_ids.h中查看.
 
 ### 5.ndpi解析流的流程
 
-1.高层应用把三,四层的数据交给nDPI;
-2.nDPI根据,默认端口和承载协议尝试猜测应用协议,并使用猜出来的协议解析器按顺序尝试就解析,如果解析成功,返回结果.如果不成功,就进行下一步.
-3.根据承载协议使用该承载协议分类下的全部协议解析其按顺序尝试解析(比如流是基于TCP,就用和TCP有关的解析器解析,而不会考虑UDP),如果成功,返回结果,不成功,就下一步.
-4.上一部不成功的原因可能是协议不被支持或者没有抓到关键的包,如果协议不被支持就会停止解析,如果是后面一种情况就继续等待高层应用提供新的数据(出现这种情况的主要原因是流开始了但没有抓到前面的关键的包,从而导致识别失败)
-如何才能知道纳西哪些包重要?哪些包不重要?
+1.高层应用把三,四层的数据交给nDPI;<br>
+2.nDPI根据,默认端口和承载协议尝试猜测应用协议,并使用猜出来的协议解析器按顺序尝试就解析,如果解析成功,返回结果.如果不成功,就进行下一步.<br>
+3.根据承载协议使用该承载协议分类下的全部协议解析其按顺序尝试解析(比如流是基于TCP,就用和TCP有关的解析器解析,而不会考虑UDP),如果成功,返回结果,不成功,就下一步.<br>
+4.上一部不成功的原因可能是协议不被支持或者没有抓到关键的包,如果协议不被支持就会停止解析,如果是后面一种情况就继续等待高层应用提供新的数据(出现这种情况的主要原因是流开始了但没有抓到前面的关键的包,从而导致识别失败)<br>
+如何才能知道纳西哪些包重要?哪些包不重要?<br>
 流使用不同的承载协议还有某些软件在开始传输数据之前会进行协商或者其他的处理,这些都是可以作为参照的流量特征.影响DPI引擎的性能的因素主要是支持的协议数量和流元数据的抽取,因为在识别的流程中,nDPI先根据端口或者url猜测可能的协议种类并解析器尝试解析,如果猜测不对就按照解析器的注册顺序解析直到有一个解析成功;
-完成分析
+完成分析<br>
 调用完ndpi_detection_process_packet函数后我们需要检查返回值,如果不等于NDPI_PROTOCOL_UNKNOWN就证明找到了协议类型.
+
 ### 6.ndpi中重要的函数结构
 
 #### 1.ndpi_detection_module_struct
