@@ -15,14 +15,17 @@ i. 编译
 ./autogen.sh
 ./configure
 make
+
 ii. 测试
 cd tests/
 ./do.sh
+
 iii. 安装
 make install (需要root权限）
 iv.例子工具
 在example中有一个已经编译好的例子ndpiReader
 输入： ./ndpiReader -h 可以查看关于ndpi使用命令行时的一些参数的解析
+
 Usage:
 i<file.pcap|device>  |指定一个需要被识别的pcap文件/文件列表，或者需要被嗅探的设备接口/接口列表(文件列表或接口列表使用","作为分隔符)
 -f<BPF filter>         |指定一条BPF规则的过滤字串
