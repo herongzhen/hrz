@@ -154,17 +154,19 @@ ndpi中通过flow->l4.tcp中的seen_syn、seen_syn_ack和seen_ack记录tcp的握
 ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册定义.在代码中用宏定义了所有能够支持的协议
 部分代码如下:
 
-typedef enum {
-  NDPI_PROTOCOL_UNKNOWN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=0,<br>
-  NDPI_PROTOCOL_FTP_CONTROL&nbsp;=1,<br>
-  NDPI_PROROCOL_MAIL_SMTP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=3,<br>
-  NDPI_PROTOCOL_DNS&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=5,<br>
-  NDPI_PROTOCOL_HTTP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=7,<br>
-  NDPI_PROTOCOL_SSDP&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=12,<br>
-  NDPI_PROTOCOL_QQ&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=48,<br>
-  NDPI_PROTOCOL_MSN&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=68,<br>
-  NDPI_PROTOCOL_SINA&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;=200,<br>
-  }
+ typedef enum {
+      NDPI_PROTOCOL_UNKNOWN      =0,
+      NDPI_PROTOCOL_FTP_CONTROL  =1,
+      NDPI_PROROCOL_MAIL_SMTP    =3,
+      NDPI_PROTOCOL_DNS          =5,
+      NDPI_PROTOCOL_HTTP         =7,
+      NDPI_PROTOCOL_SSDP         =12,
+      NDPI_PROTOCOL_QQ           =48,
+      NDPI_PROTOCOL_MSN          =68,
+      NDPI_PROTOCOL_YAHOO        =70,
+      NDPI_PROTOCOL_SINA         =200,
+      }
+
   
   具体完整代码可在nDPI/src/include/ndpi_protocol_ids.h中查看.
 
@@ -185,35 +187,35 @@ typedef enum {
 
 主要用于存储一些全局变量,由ndpi_init_detection_module()函数在初始化的过程中返回.结构体定义如下:
 
-typedef struct ndpi_detection_module_struct {
-  NDPI_PROTOCOL_BITMASK detection_bitmask;
-  NDPI_PROTOCOL_BITMASK generic_http_packet_bitmask;
-//回调数组，当检测协议时会逐个进行遍历，调用相应协议检测函数。这是总的，下面又分为tcp/udp
-  struct ndpi_call_function_struct callback_buffer[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
-  u_int32_t callback_buffer_size;//=150，下面数字也都是调试过程中得到，可能不同版本支持协议数不同
-//基于tcp协议且不带负载，共有11种
-  struct ndpi_call_function_struct callback_buffer_tcp_no_payload[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
-  u_int32_t callback_buffer_size_tcp_no_payload;
-//基于tcp且带负载协议的应用，共113种
-  struct ndpi_call_function_struct callback_buffer_tcp_payload[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
-  u_int32_t callback_buffer_size_tcp_payload;
-//基于udp协议的应用，共73种
-  struct ndpi_call_function_struct callback_buffer_udp[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
-  u_int32_t callback_buffer_size_udp;
-//既不是基于tcp也不是基于udp协议类型，共10种；
-  struct ndpi_call_function_struct callback_buffer_non_tcp_udp[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
-  u_int32_t callback_buffer_size_non_tcp_udp;
-//该结构体下面进行介绍，之后会构成二叉树，根据端口进行查找；
-  ndpi_default_ports_tree_node_t *tcpRoot, *udpRoot;
-  u_int32_t tcp_max_retransmission_window_size;
-  /* IP-based protocol detection */
-  void *protocols_ptree;
-//不同协议所对应的端口信息  
-  ndpi_proto_defaults_t proto_defaults[NDPI_MAX_SUPPORTED_PROTOCOLS+NDPI_MAX_NUM_CUSTOM_PROTOCOLS];
-
-  u_int8_t match_dns_host_names:1, http_dissect_response:1;
-  u_int8_t direction_detect_disable:1; /* disable internal detection of packet direction */
-} ndpi_detection_module_struct_t;
+    typedef struct ndpi_detection_module_struct {
+      NDPI_PROTOCOL_BITMASK detection_bitmask;
+      NDPI_PROTOCOL_BITMASK generic_http_packet_bitmask;
+    //回调数组，当检测协议时会逐个进行遍历，调用相应协议检测函数。这是总的，下面又分为tcp/udp
+      struct ndpi_call_function_struct callback_buffer[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
+      u_int32_t callback_buffer_size;//=150，下面数字也都是调试过程中得到，可能不同版本支持协议数不同
+    //基于tcp协议且不带负载，共有11种
+      struct ndpi_call_function_struct callback_buffer_tcp_no_payload[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
+      u_int32_t callback_buffer_size_tcp_no_payload;
+    //基于tcp且带负载协议的应用，共113种
+      struct ndpi_call_function_struct callback_buffer_tcp_payload[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
+      u_int32_t callback_buffer_size_tcp_payload;
+    //基于udp协议的应用，共73种
+      struct ndpi_call_function_struct callback_buffer_udp[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
+      u_int32_t callback_buffer_size_udp;
+    //既不是基于tcp也不是基于udp协议类型，共10种；
+      struct ndpi_call_function_struct callback_buffer_non_tcp_udp[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
+      u_int32_t callback_buffer_size_non_tcp_udp;
+    //该结构体下面进行介绍，之后会构成二叉树，根据端口进行查找；
+      ndpi_default_ports_tree_node_t *tcpRoot, *udpRoot;
+      u_int32_t tcp_max_retransmission_window_size;
+      /* IP-based protocol detection */
+      void *protocols_ptree;
+    //不同协议所对应的端口信息  
+      ndpi_proto_defaults_t proto_defaults[NDPI_MAX_SUPPORTED_PROTOCOLS+NDPI_MAX_NUM_CUSTOM_PROTOCOLS];
+    
+      u_int8_t match_dns_host_names:1, http_dissect_response:1;
+      u_int8_t direction_detect_disable:1; /* disable internal detection of packet direction */
+    } ndpi_detection_module_struct_t;
 
 #### 2.ndpi_packet_struct
 
