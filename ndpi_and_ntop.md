@@ -126,10 +126,11 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
  
  2、flow->packet的初始化
  
-     这里通过捕获的ip报文（packet参数）和用户设置的current_tick参数，对flow->packet.iph和flow->packet.tick_timestamp进行初始化。
+  这里通过捕获的ip报文（packet参数）和用户设置的current_tick参数，对flow->packet.iph和flow->packet.tick_timestamp进行初始化。
+ 
  3、传输层检测及flow的初始化
  
-     这里主要通过函数ndpi_init_packet_header（在ndpi_main.c中进行了定义）进行了实现，它完成比较多的工作。
+  这里主要通过函数ndpi_init_packet_header（在ndpi_main.c中进行了定义）进行了实现，它完成比较多的工作。
         1）首先一个就是根据ndpi_packet_struct中的协议栈内容和描述信息，对flow的协议栈内容和描述信息进行了初始化。这部分通过内部的ndpi_apply_flow_protocol_to_packet函数进行了实现。
         2）根据ipv4和ipv6对flow中的packet分别进行初始化（flow->packet.iph和flow->packet.iphv6）
         3）通过ndpi_detection_get_l4_internal对报文的ipv4（ipv6）header进行检测，并且获取传输层协议信息。通过l4protocol变量进行传递，记录传输层协议号。
@@ -151,7 +152,7 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
           flow->l4.tcp.seen_ack = 1;}
 
 ndpi中通过flow->l4.tcp中的seen_syn、seen_syn_ack和seen_ack记录tcp的握手状态。然后根据分析报文中的syn和ack字段进行归类，为后期的检测提供数据基础。
-nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊的ndpi_flow_struct类型来表示一个TCP会话(这个数据结构还包含了“协议分析”部分数据)。为了便于分析完整的TCP请求我们定义了一个自己的数据结构dpi_flow_t，ndpi_flow_struct作为它的一个成员。用伪代码表示分析过程：
+nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊的ndpi_flow_struct类型来表示一个TCP会话(这个数据结构还包含了“协议分析”部分数据)。为了便于分析完整的TCP请求,我们定义了一个自己的数据结构dpi_flow_t，ndpi_flow_struct作为它的一个成员。用伪代码表示分析过程：
 
     1.收到数据包；
     2.提取源端口,目的端口,源IP地址,目的IP地址,经过hash计算组成唯一标识；
@@ -184,15 +185,14 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
   
   具体完整代码可在nDPI/src/include/ndpi_protocol_ids.h中查看.
 
-### 5.ndpi解析流的流程
+### 5.ndpi解析流的过程
 
 1.高层应用把三,四层的数据交给nDPI;<br>
 2.nDPI根据,默认端口和承载协议尝试猜测应用协议,并使用猜出来的协议解析器按顺序尝试就解析,如果解析成功,返回结果.如果不成功,就进行下一步.<br>
 3.根据承载协议使用该承载协议分类下的全部协议解析其按顺序尝试解析(比如流是基于TCP,就用和TCP有关的解析器解析,而不会考虑UDP),如果成功,返回结果,不成功,就下一步.<br>
 4.上一部不成功的原因可能是协议不被支持或者没有抓到关键的包,如果协议不被支持就会停止解析,如果是后面一种情况就继续等待高层应用提供新的数据(出现这种情况的主要原因是流开始了但没有抓到前面的关键的包,从而导致识别失败)<br>
-如何才能知道纳西哪些包重要?哪些包不重要?<br>
+如何才能知道哪些包重要?哪些包不重要?<br>
 流使用不同的承载协议还有某些软件在开始传输数据之前会进行协商或者其他的处理,这些都是可以作为参照的流量特征.影响DPI引擎的性能的因素主要是支持的协议数量和流元数据的抽取,因为在识别的流程中,nDPI先根据端口或者url猜测可能的协议种类并解析器尝试解析,如果猜测不对就按照解析器的注册顺序解析直到有一个解析成功;
-完成分析<br>
 调用完ndpi_detection_process_packet函数后我们需要检查返回值,如果不等于NDPI_PROTOCOL_UNKNOWN就证明找到了协议类型.
 
 ### 6.ndpi中重要的函数结构
@@ -323,7 +323,7 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
 具体详细代码在nDPI/src/include/ndpi_define.h中
  在这里提出一个问题:(((x)+((y)-1))/(y))是如何计算的?
  
-   这里维护协议映射的数据结构是上面提到的ndpi_protocol_bitmask_struct（u_int32_t的数组）。对于数组的每一个位置比如fds_bits[1]，这u_int32_t一共有4字节。也就事32位，每位代表这一个协议的映射。这一点不仅可以从上面的定义看出，在接下来的第2部分将更明显地可以看到这是一个类似hash的映射结构。然后回到为什么要(((x)+((y)-1))/(y))的问题，这里的y其实就是32，所以这里这样计算数组是为了得出一个恰好满足能存放协议映射的数组大小（当然数组的位数不是全部应用与映射，毕竟会有一点空间的浪费）
+   这里维护协议映射的数据结构是上面提到的ndpi_protocol_bitmask_struct（u_int32_t的数组）。对于数组的每一个位置比如fds_bits[1]，这u_int32_t一共有4字节。也就是32位，每位代表这一个协议的映射。然后回到为什么要(((x)+((y)-1))/(y))的问题，这里的y其实就是32，所以这里这样计算数组是为了得出一个恰好满足能存放协议映射的数组大小（数组的位数并不是全部应用于映射，会有一点空间的浪费）
 
 ##### 2.NDPI_BITMASK_SET_ALL(all)
 
