@@ -352,3 +352,35 @@ typedef struct ndpi_detection_module_struct {
 						       }
     #endif
 ### 7.ndpi识别协议具体过程
+
+**开始识别**<br>
+识别协议的API非常简单——ndpi_detection_process_packet函数。
+
+    ndpi_protocol ndpi_detection_process_packet(struct ndpi_detection_module_struct *ndpi_struct,
+                                                struct ndpi_flow_struct *flow,
+                                                const unsigned char *packet,
+                                                const unsigned short packetlen,
+                                                const u_int64_t current_tick_l,
+                                                struct ndpi_id_struct *src,
+                                                struct ndpi_id_struct *dst)
+
+ndpi_struct全局的结构体
+flow数据流
+packet指向IP头部的指针
+packetlen数据包大小
+current_tick_l当前时间(精确到毫秒)用于判断“过期的TCP请求”
+src，dst唯一的用途是更新“分析协议”的配置。一般设置为NULL
+TCP协议是一个流(flow)式的协议，经过从三次握手开始通讯双方都是“请求->响应”的结构。DPI可以跟踪其中的一个或者几个数据包，也可以实现全部跟踪
+
+nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊的ndpi_flow_struct类型来表示一个TCP会话(这个数据结构还包含了“协议分析”部分数据)。为了便于分析完整的TCP请求我们定义了一个自己的数据结构dpi_flow_t，ndpi_flow_struct作为它的一个成员。用伪代码表示分析过程：
+
+    1.收到数据包；
+    2.提取源端口,目的端口,源IP地址,目的IP地址,经过hash计算组成唯一标识；
+    3.查找二叉树中是否包含这个数据
+    4.如果不包含,说明是第一次匹配到,初始化ndpi_flow_t对象,初始化它的成员ndpi_flow_struct类型.放到二叉树,此时传递到ndpi_detection_process_packet的flow参数就是ndpi_flow;
+    5.如果包含,说明这个数据不是第一次被匹配到,那么就取出该元素,成员ndpi_flow就是ndpi_detection_process_packet的flow参数;
+
+落到代码上就是get_ndpi_flow函数;实现上我们会对目标、源端口排序再做hash;这是由于数据包是“相互通讯”的所以发送方、接收方是相对而言，否则识别到的可能是“一方”的数据。
+
+**完成分析**<br>
+调用完ndpi_detection_process_packet函数后我们需要检查返回值，如果它不等于NDPI_PROTOCOL_UNKNOWN证明就找到了协议类型。
