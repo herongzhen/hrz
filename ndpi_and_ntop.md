@@ -14,44 +14,44 @@ nDPI是一个从OpenDPI发展而来的DPI库，现在由ntop组织负责维护�
 i. 编译
 ./autogen.sh
 ./configure
-make
+make<br>
 ii. 测试
 cd tests/
-./do.sh
+./do.sh<br>
 iii. 安装
-make install (需要root权限）
+make install (需要root权限）<br>
 iv.例子工具
 在example中有一个已经编译好的例子ndpiReader
 输入： ./ndpiReader -h 可以查看关于ndpi使用命令行时的一些参数的解析
 
-Usage:
- i<file.pcap|device>  |指定一个需要被识别的pcap文件/文件列表，或者需要被嗅探的设备接口/接口列表(文件列表或接口列表使用","作为分隔符) 
- -f<BPF filter>         |指定一条BPF规则的过滤字串
- -s<duration>           |最大的嗅探时间(显然只在嗅探接口时生效)
- -m<duration>           | pcap文件分段解析超时时间(显然只在解析pcap文件时生效)
- -p<file>.protos        |指定一个自定义的协议识别配置文件(eg.protos.txt)
- -l<num loops>          |指定循环执行嗅探的次数(仅用于测试)
- -n<num threads>        |指定线程数量，缺省跟设备接口数量对应                     |如果传入的是pcap文件时固定使用单线程
- -j<file.json>          |指定一个输出包内容的json文件
- -g<id:id...>           |指定线程-CPU亲和关系映射表
- -d                     |禁止协议猜测功能
- -q                     |安静模式，意味着不打印信息
- -t                     |解析GTP隧道协议
- -r                     |打印 nDPI版本和git版本
- -w<path>               |指定测试信息的输出文件
- -h                     | help信息
- -v<1|2|3>              |按级别进一步打印包的详细信息，分为1、2、3级
+Usage:<br>
+ i<file.pcap|device>  |指定一个需要被识别的pcap文件/文件列表，或者需要被嗅探的设备接口/接口列表(文件列表或接口列表使用","作为分隔符)<br> 
+ -f<BPF filter>         |指定一条BPF规则的过滤字串<br>
+ -s<duration>           |最大的嗅探时间(显然只在嗅探接口时生效)<br>
+ -m<duration>           | pcap文件分段解析超时时间(显然只在解析pcap文件时生效)<br>
+ -p<file>.protos        |指定一个自定义的协议识别配置文件(eg.protos.txt)<br>
+ -l<num loops>          |指定循环执行嗅探的次数(仅用于测试)<br>
+ -n<num threads>        |指定线程数量，缺省跟设备接口数量对应                     |如果传入的是pcap文件时固定使用单线程<br>
+ -j<file.json>          |指定一个输出包内容的json文件<br>
+ -g<id:id...>           |指定线程-CPU亲和关系映射表<br>
+ -d                     |禁止协议猜测功能<br>
+ -q                     |安静模式，意味着不打印信息<br>
+ -t                     |解析GTP隧道协议<br>
+ -r                     |打印 nDPI版本和git版本<br>
+ -w<path>               |指定测试信息的输出文件<br>
+ -h                     | help信息<br>
+ -v<1|2|3>              |按级别进一步打印包的详细信息，分为1、2、3级<br>
 
 ## 四.ndpi的使用
 
 ### 1. ndpi协议识别总体概述
 
-结构初始化 &nbsp;ndpi_workflow_init
-协议模块加载&nbsp;ndpi_init_protocol_defaults
-协议识别算法注册&nbsp; ndpi_set_protocol_detection_bitmask2
-进行协议识别,流量分类&nbsp;ndpi_detection_process_packet
-针对未能识别的协议进行协议猜测 &nbsp;ndpi_guess_protocol_id
-产生协议识别结果,记录在结构体中&nbsp; ndpi_flow_struct
+**结构初始化** &nbsp;ndpi_workflow_init<br>
+**协议模块加载**&nbsp;ndpi_init_protocol_defaults<br>
+**协议识别算法注册**&nbsp; ndpi_set_protocol_detection_bitmask2<br>
+**进行协议识别,流量分类**&nbsp;ndpi_detection_process_packet<br>
+**针对未能识别的协议进行协议猜测** &nbsp;ndpi_guess_protocol_id<br>
+**产生协议识别结果,记录在结构体中**&nbsp; ndpi_flow_struct<br>
 
 ###  2.ndpi的工作流程
 
@@ -119,16 +119,19 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
     
  1.检测包长度
  
-这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用ndpi_int_reset_packet_protocol把flow内部的协议栈顶类型置为UNKNOW。并且清0协议栈信息字段，最后返回UNKNOW类型。
+  这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用ndpi_int_reset_packet_protocol把flow内部的协议栈顶类型置为UNKNOW。并且清0协议栈信息字段，最后返回UNKNOW类型。
  2、flow->packet的初始化
+ 
      这里通过捕获的ip报文（packet参数）和用户设置的current_tick参数，对flow->packet.iph和flow->packet.tick_timestamp进行初始化。
  3、传输层检测及flow的初始化
+ 
      这里主要通过函数ndpi_init_packet_header（在ndpi_main.c中进行了定义）进行了实现，他完成比较多的工作。
         1）首先一个就是根据ndpi_packet_struct中的协议栈内容和描述信息，对flow的协议栈内容和描述信息进行了初始化。这部分通过内部的ndpi_apply_flow_protocol_to_packet函数进行了实现。
         2）根据ipv4和ipv6对flow中的packet分别进行初始化（flow->packet.iph和flow->packet.iphv6）
         3）通过ndpi_detection_get_l4_internal对报文的ipv4（ipv6）header进行检测，并且获取传输层协议信息。通过l4protocol变量进行传递，记录传输层协议号。
         4）根据l4protocol字段进行传输层的判别，如果是tcp（协议号是6）则对包内部的syn和ack等字段进行初步的检测。如果是udp（协议号是17），则计算出包的长度。初始化flow->packet当中的字段
   4、flow传输层信息的初始化
+  
      这里主要通过报文获取传输层信息，比如在tcp协议中我们捕获到的报文是握手中的什么角色，是ack包还是其他的。这些信息将对检测提供一些数据。
         1）首先通过src和dst参数初始化flow->src和flow->dst字段
         2）通过ndpi_connection_tracking函数进行我们上述的工作。这里它判断的tcp握手的状态，并且通过flow->next_tcp_seq_nr数组对tcp序列进行了描述。
