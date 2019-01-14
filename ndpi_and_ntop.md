@@ -356,7 +356,7 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
 ### 7.ndpi识别协议具体过程
 
 **开始识别**<br>
-识别协议的API非常简单——ndpi_detection_process_packet函数。
+识别协议的函数——ndpi_detection_process_packet.
 
     ndpi_protocol ndpi_detection_process_packet(struct ndpi_detection_module_struct *ndpi_struct,
                                                 struct ndpi_flow_struct *flow,
