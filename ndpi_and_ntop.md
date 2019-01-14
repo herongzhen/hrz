@@ -57,17 +57,18 @@ Usage:<br>
 
 ###  2.ndpi的工作流程
 
-&nbsp;&nbsp;首先是程序的初始化，调用setupDetection()函数.<br>
+&nbsp;&nbsp;首先是程序的初始化，调用`setupDetection()`函数.<br>
 &nbsp;&nbsp;接下来会开启线程调用libpcap库函数对通过电脑网卡的数据包进行抓取，或者读取传入的.pcap文件.<br> 
 &nbsp;&nbsp;接下来对每一个数据包（数据包(packet)和数据流(flow)，一个数据流中可能会有很多个数据包，就像我们申请一个网页请求，由于页面信息很大，所以会分成很多个数据包来传输，但这些数据包同属于一个数据流），首先对其数据链路层和IP层进行拆包分析pcap_packet_callback()函数，判断是否为基于IP协议等，并获得其源目的IP、协议类型等。<br> 
-再接下来调用packet_processing()函数，进行传输层分析。在进行传输层分析时调用了get_ndpi_flow()函数，该函数返回ndpi_flow这个结构体。在get_ndpi_flow()函数中获取传输层的信息如源目的端口等信息。然后根据（源目的IP、源目的端口、协议类型(tcp\udp)）这五个元素计算出idx。
-
+再接下来调用`packet_processing()`函数，进行传输层分析。在进行传输层分析时调用了`get_ndpi_flow()`函数，该函数返回ndpi_flow这个结构体。在`get_ndpi_flow()`函数中获取传输层的信息如源目的端口等信息。然后根据（源目的IP、源目的端口、协议类型(tcp\udp)）这五个元素计算出idx。
+```C
     idx = (vlan_id + lower_ip + upper_ip + iph->protocol + lower_port + upper_port) % NUM_ROOTS;
     ret = ndpi_tfind(&flow, &ndpi_thread_info[thread_id].ndpi_flows_root[idx], node_cmp);
+```
 程序定义了一个数组，用来记录所有的数据流，而idx是用来标识不同的数据流，根据前面解析出数据包的五元组计算idx，然后查询 ndpi_flows_root[]这个数组在索引为idx位置是否已经有了记录。<br>
-一般，对于一个数据流而言，该流的第一个数据包查询时,ndpi_flows_root[idx]为空，则建立一个新的ndpi_flow对象并保存到该位置处；等抓到该数据流的后续数据包时，因为属于同一个流(即idx相同)，所以ndpi_flows_root[idx]不为空，则直接返回已经有的ndpi_flow即可。至此，我们得到了ndpi_flow这个结构体.<br>
-接下来函数会调用ndpi_detection_process_packet()这个函数进行应用层分析。这也是应用协议分析的主体函数.这个函数传进的参数是ndpi_flow_struct(下面记为flow)，函数首先会对flow->packet即对packet这个结构体进行初始化。因为对于同一个流flow而言，在该结构体中有些变量在第一个数据包时已经初始化了，这些变量可能在特定情况下才会发生改变，比如检测出了协议等；而对每一个数据包，flow中必须要变的就是flow->packet中的信息。接下来会调用ndpi_connection_tracking()函数，这个函数的主要作用是判断这个包的‘位置’,这个函数在数据包重组等功能中会有很重要的作用。部分代码如下`   
-
+一般，对于一个数据流而言，该流的第一个数据包查询时,`ndpi_flows_root[idx]`为空，则建立一个新的ndpi_flow对象并保存到该位置处；等抓到该数据流的后续数据包时，因为属于同一个流(即idx相同)，所以`ndpi_flows_root[idx]`不为空，则直接返回已经有的ndpi_flow即可。至此，我们得到了`ndpi_flow`这个结构体.<br>
+接下来函数会调用`ndpi_detection_process_packet()`这个函数进行应用层分析。这也是应用协议分析的主体函数.这个函数传进的参数是ndpi_flow_struct(下面记为flow)，函数首先会对flow->packet即对packet这个结构体进行初始化。因为对于同一个流flow而言，在该结构体中有些变量在第一个数据包时已经初始化了，这些变量可能在特定情况下才会发生改变，比如检测出了协议等；而对每一个数据包，flow中必须要变的就是flow->packet中的信息。接下来会调用`ndpi_connection_tracking()`函数，这个函数的主要作用是判断这个包的‘位置’,这个函数在数据包重组等功能中会有很重要的作用。部分代码如下`   
+```C
     if(tcph->syn != 0 && tcph->ack == 0 && flow->l4.tcp.seen_syn == 0 && flow->l4.tcp.seen_syn_ack == 0
            && flow->l4.tcp.seen_ack == 0) {
           flow->l4.tcp.seen_syn = 1;
@@ -99,12 +100,12 @@ Usage:<br>
          ndpi_struct->tcp_max_retransmission_window_size) {
         packet->tcp_retransmission = 1;
         }
-
+```
    
 ### 3. 分析函数API的实现
 
 ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的API,函数原型如下:
-
+```C
 
     unsigned int ndpi_detection_process_packet(
         struct ndpi_detection_module_struct *ndpi_struct,
@@ -119,10 +120,10 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
         //包的tick值
         struct ndpi_id_struct *src,struct ndpi_id_struct *dst)
         //ndpi_id_struct里面包含各个协议的源目的端信息
-    
+  ```
  1.检测包长度
  
-  这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用ndpi_int_reset_packet_protocol把flow内部的协议栈顶类型置为UNKNOW。并且清0协议栈信息字段，最后返回UNKNOW类型。
+  这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用ndpi_int_reset_packet_protocol把flow内部的协议栈顶类型置为`UNKNOW`。并且清0协议栈信息字段，最后返回UNKNOW类型。
  
  2、flow->packet的初始化
  
@@ -130,17 +131,17 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
  
  3、传输层检测及flow的初始化
  
-  这里主要通过函数ndpi_init_packet_header（在ndpi_main.c中进行了定义）进行了实现，它完成比较多的工作。
-        1）首先一个就是根据ndpi_packet_struct中的协议栈内容和描述信息，对flow的协议栈内容和描述信息进行了初始化。这部分通过内部的ndpi_apply_flow_protocol_to_packet函数进行了实现。
+  这里主要通过函数`ndpi_init_packet_header`（在ndpi_main.c中进行了定义）进行了实现，它完成比较多的工作。
+        1）首先一个就是根据ndpi_packet_struct中的协议栈内容和描述信息，对flow的协议栈内容和描述信息进行了初始化。这部分通过内部的`ndpi_apply_flow_protocol_to_packet`函数进行了实现。
         2）根据ipv4和ipv6对flow中的packet分别进行初始化（flow->packet.iph和flow->packet.iphv6）
-        3）通过ndpi_detection_get_l4_internal对报文的ipv4（ipv6）header进行检测，并且获取传输层协议信息。通过l4protocol变量进行传递，记录传输层协议号。
+        3）通过`ndpi_detection_get_l4_internal`对报文的ipv4（ipv6）header进行检测，并且获取传输层协议信息。通过l4protocol变量进行传递，记录传输层协议号。
         4）根据l4protocol字段进行传输层的判别，如果是tcp（协议号是6）则对包内部的syn和ack等字段进行初步的检测。如果是udp（协议号是17），则计算出包的长度。初始化flow->packet当中的字段
   4、flow传输层信息的初始化
   
      这里主要通过报文获取传输层信息，比如在tcp协议中我们捕获到的报文是握手中的什么角色，是ack包还是其他的。这些信息将对检测提供一些数据。
         1）首先通过src和dst参数初始化flow->src和flow->dst字段
         2）通过ndpi_connection_tracking函数进行我们上述的工作。这里它判断的tcp握手的状态，并且通过flow->next_tcp_seq_nr数组对tcp序列进行了描述。
-
+```C
     if (tcph->syn != 0 && tcph->ack == 0 && flow->l4.tcp.seen_syn == 0 && flow->l4.tcp.seen_syn_ack == 0
     	&& flow->l4.tcp.seen_ack == 0) {
           flow->l4.tcp.seen_syn = 1;}
@@ -150,7 +151,7 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
     if (tcph->syn == 0 && tcph->ack == 1 && flow->l4.tcp.seen_syn == 1 && flow->l4.tcp.seen_syn_ack == 1
     	&& flow->l4.tcp.seen_ack == 0) {
           flow->l4.tcp.seen_ack = 1;}
-
+```
 ndpi中通过flow->l4.tcp中的seen_syn、seen_syn_ack和seen_ack记录tcp的握手状态。然后根据分析报文中的syn和ack字段进行归类，为后期的检测提供数据基础。
 nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊的ndpi_flow_struct类型来表示一个TCP会话(这个数据结构还包含了“协议分析”部分数据)。为了便于分析完整的TCP请求,我们定义了一个自己的数据结构dpi_flow_t，ndpi_flow_struct作为它的一个成员。用伪代码表示分析过程：
 
@@ -160,9 +161,9 @@ nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊�
     4.如果不包含,说明是第一次匹配到,初始化ndpi_flow_t对象,初始化它的成员ndpi_flow_struct类型.放到二叉树,此时传递到ndpi_detection_process_packet的flow参数就是ndpi_flow;
     5.如果包含,说明这个数据不是第一次被匹配到,那么就取出该元素,成员ndpi_flow就是ndpi_detection_process_packet的flow参数;
 
-落到代码上就是get_ndpi_flow函数;实现上我们会对目标、源端口排序再做hash;这是由于数据包是“相互通讯”的所以发送方、接收方是相对而言，否则识别到的可能是“一方”的数据。
+代码体现在`get_ndpi_flow`函数;实现上我们会对目标、源端口排序再做hash;这是由于数据包是“相互通讯”的所以发送方、接收方是相对而言，否则识别到的可能是“一方”的数据。
 
-调用完ndpi_detection_process_packet函数后我们需要检查返回值，如果它不等于NDPI_PROTOCOL_UNKNOWN证明就找到了协议类型。
+调用完`ndpi_detection_process_packet`函数后我们需要检查返回值，如果它不等于NDPI_PROTOCOL_UNKNOWN证明就找到了协议类型。
 
     
 ###  4.ndpi如何定义一个协议
@@ -193,14 +194,14 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
 4.上一部不成功的原因可能是协议不被支持或者没有抓到关键的包,如果协议不被支持就会停止解析,如果是后面一种情况就继续等待高层应用提供新的数据(出现这种情况的主要原因是流开始了但没有抓到前面的关键的包,从而导致识别失败)<br>
 如何才能知道哪些包重要?哪些包不重要?<br>
 流使用不同的承载协议还有某些软件在开始传输数据之前会进行协商或者其他的处理,这些都是可以作为参照的流量特征.影响DPI引擎的性能的因素主要是支持的协议数量和流元数据的抽取,因为在识别的流程中,nDPI先根据端口或者url猜测可能的协议种类并解析器尝试解析,如果猜测不对就按照解析器的注册顺序解析直到有一个解析成功;
-调用完ndpi_detection_process_packet函数后我们需要检查返回值,如果不等于NDPI_PROTOCOL_UNKNOWN就证明找到了协议类型.
+调用完`ndpi_detection_process_packet`函数后我们需要检查返回值,如果不等于NDPI_PROTOCOL_UNKNOWN就证明找到了协议类型.
 
 ### 6.ndpi中重要的函数结构
 
 #### 1.ndpi_detection_module_struct
 
-主要用于存储一些全局变量,由ndpi_init_detection_module()函数在初始化的过程中返回.结构体定义如下:
-
+主要用于存储一些全局变量,由`ndpi_init_detection_module()`函数在初始化的过程中返回.结构体定义如下:
+```C
     typedef struct ndpi_detection_module_struct {
       NDPI_PROTOCOL_BITMASK detection_bitmask;
       NDPI_PROTOCOL_BITMASK generic_http_packet_bitmask;
@@ -230,10 +231,11 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
       u_int8_t match_dns_host_names:1, http_dissect_response:1;
       u_int8_t direction_detect_disable:1; /* disable internal detection of packet direction */
     } ndpi_detection_module_struct_t;
-
+```
 #### 2.ndpi_packet_struct
 
     这个结构体主要用于存储一个数据包的相关信息
+ ```C
         typedef struct ndpi_packet_struct {
       const struct ndpi_iphdr *iph;//ip层信息
     #ifdef NDPI_DETECTION_SUPPORT_IPV6
@@ -259,10 +261,11 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
       u_int8_t packet_lines_parsed_complete:1,    packet_direction:1,//源到目的、目的到源
         empty_line_position_set:1;
     } ndpi_packet_struct_t;
+ ```
 #### 3.ndpi_flow_struct
 
 这个结构体用于存储一个数据流的相关信息,一个数据流可能会有很多数据包.所以在这个结构体中定义了很多标识变量(有出生初始赋值),用于区别不同的数据包和减少重复多余的工作
-
+```C
     typedef struct ndpi_flow_struct {
       u_int16_t detected_protocol_stack[NDPI_PROTOCOL_HISTORY_SIZE];
       u_int16_t guessed_protocol_id;
@@ -300,19 +303,19 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
       struct ndpi_id_struct *src;
       struct ndpi_id_struct *dst;
     } ndpi_flow_struct_t;
-
+```
 #### 4.ndpi_set_protocol_detection_bitmask2
 
 ##### 1.NDPI_PROTOCOL_BITMASK all
 
 这里的NDPI_PROTOCOL_BITMASK代表的是一个变量类型,而all则是一个定义的实例(变量),详细定义,如下
-
+```C
     typedef u_int32_t ndpi_ndpi_mask;
     typedef struct ndpi_protocol_bitmask_struct {
       ndpi_ndpi_mask  fds_bits[NDPI_NUM_FDS_BITS];
     } ndpi_protocol_bitmask_struct_t;
     #define NDPI_PROTOCOL_BITMASK ndpi_protocol_bitmask_struct_t
-
+```
 其实NDPI_PROTOCOL_BITMASK类型就是一个u_int_32_t的数组.
 数组的大小NDPI_FDS_BITS计算过程:
 
@@ -328,7 +331,7 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
 ##### 2.NDPI_BITMASK_SET_ALL(all)
 
    这个宏定义的作用是把映射中的所有应用都进行设置
-
+```C
     #define NDPI_SET(p, n)    ((p)->fds_bits[(n)/NDPI_BITS] |= (1 << (((u_int32_t)n) % NDPI_BITS)))
     //这里通过|=操作进行设置，原理和+=一样只是换成逻辑符。然后从后面的操作我们可以明显看到hash的身影
     #define NDPI_CLR(p, n)    ((p)->fds_bits[(n)/NDPI_BITS] &= ~(1 << (((u_int32_t)n) % NDPI_BITS)))
@@ -347,11 +350,11 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
     #define NDPI_DEL_PROTOCOL_FROM_BITMASK(bmask,value)   NDPI_CLR(&bmask,value)
     #define NDPI_COMPARE_PROTOCOL_TO_BITMASK(bmask,value) NDPI_ISSET(&bmask,value)
     #define NDPI_SAVE_AS_BITMASK(bmask,value)  { NDPI_ZERO(&bmask) ; NDPI_ADD_PROTOCOL_TO_BITMASK(bmask, value); }
-
+```
 ##### 3.ndpi_set_detection_bitmask2(ndpi_struct,&all)
    
    这一部分是检测协议注册的核心函数,其中掺杂着一些协议之间的依赖关系,列举部分代码段研究其具体的工作原理
-   
+```C 
        #ifdef NDPI_PROTOCOL_SNMP //SNMP是一个网络管理协议
          if (NDPI_COMPARE_PROTOCOL_TO_BITMASK(*detection_bitmask, NDPI_PROTOCOL_SNMP) != 0) {
 	         //我们在上面第2点中介绍了NDPI_COMPARE_PROTOCOL_TO_BITMASK的具体实现，如果我们有注册这个协议进入if语句里面
@@ -368,4 +371,4 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
 						       }
     #endif
 
-
+```
