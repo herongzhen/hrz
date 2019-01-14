@@ -154,19 +154,18 @@ ndpi中通过flow->l4.tcp中的seen_syn、seen_syn_ack和seen_ack记录tcp的握
 
 ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册定义.在代码中用宏定义了所有能够支持的协议
 部分代码如下:
-
- typedef enum {
-      NDPI_PROTOCOL_UNKNOWN      =0,
-      NDPI_PROTOCOL_FTP_CONTROL  =1,
-      NDPI_PROROCOL_MAIL_SMTP    =3,
-      NDPI_PROTOCOL_DNS          =5,
-      NDPI_PROTOCOL_HTTP         =7,
-      NDPI_PROTOCOL_SSDP         =12,
-      NDPI_PROTOCOL_QQ           =48,
-      NDPI_PROTOCOL_MSN          =68,
-      NDPI_PROTOCOL_YAHOO        =70,
-      NDPI_PROTOCOL_SINA         =200,
-      }
+  typedef enum {
+          NDPI_PROTOCOL_UNKNOWN      =0,
+          NDPI_PROTOCOL_FTP_CONTROL  =1,
+          NDPI_PROROCOL_MAIL_SMTP    =3,
+          NDPI_PROTOCOL_DNS          =5,
+          NDPI_PROTOCOL_HTTP         =7,
+          NDPI_PROTOCOL_SSDP         =12,
+          NDPI_PROTOCOL_QQ           =48,
+          NDPI_PROTOCOL_MSN          =68,
+          NDPI_PROTOCOL_YAHOO        =70,
+          NDPI_PROTOCOL_SINA         =200,
+          }
 
   
   具体完整代码可在nDPI/src/include/ndpi_protocol_ids.h中查看.
