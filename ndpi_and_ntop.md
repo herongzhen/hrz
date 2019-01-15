@@ -227,17 +227,17 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
       NDPI_PROTOCOL_BITMASK generic_http_packet_bitmask;
     //回调数组，当检测协议时会逐个进行遍历，调用相应协议检测函数。这是总的，下面又分为tcp/udp
       struct ndpi_call_function_struct callback_buffer[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
-      u_int32_t callback_buffer_size;//=150，下面数字也都是调试过程中得到，可能不同版本支持协议数不同
-    //基于tcp协议且不带负载，共有11种
+      u_int32_t callback_buffer_size;
+    //基于tcp协议且不带负载
       struct ndpi_call_function_struct callback_buffer_tcp_no_payload[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
       u_int32_t callback_buffer_size_tcp_no_payload;
-    //基于tcp且带负载协议的应用，共113种
+    //基于tcp且带负载协议的应用
       struct ndpi_call_function_struct callback_buffer_tcp_payload[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
       u_int32_t callback_buffer_size_tcp_payload;
-    //基于udp协议的应用，共73种
+    //基于udp协议的应用
       struct ndpi_call_function_struct callback_buffer_udp[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
       u_int32_t callback_buffer_size_udp;
-    //既不是基于tcp也不是基于udp协议类型，共10种；
+    //既不是基于tcp也不是基于udp协议类型
       struct ndpi_call_function_struct callback_buffer_non_tcp_udp[NDPI_MAX_SUPPORTED_PROTOCOLS + 1];
       u_int32_t callback_buffer_size_non_tcp_udp;
     //该结构体下面进行介绍，之后会构成二叉树，根据端口进行查找；
@@ -267,7 +267,7 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
       const u_int8_t *payload;//负载。数据包再除去数据链路层信息后，接下来是ip层信息，在接下来是传输层信息，即tcp/udp/generic_l4_ptr,再接下来就是负载信息。
       u_int16_t detected_protocol_stack[NDPI_PROTOCOL_HISTORY_SIZE];
       u_int8_t detected_subprotocol_stack[NDPI_PROTOCOL_HISTORY_SIZE];
-    //接下来是有关http协议的一些变量定义，不全部列出
+    //接下来是有关http协议的一些变量定义，仅列出一部分
       struct ndpi_int_one_line_struct line[NDPI_MAX_PARSE_LINES_PER_PACKET];
       struct ndpi_int_one_line_struct host_line;
     ......
@@ -284,7 +284,7 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
  ```
 #### 3.ndpi_flow_struct
 
-这个结构体用于存储一个数据流的相关信息,一个数据流可能会有很多数据包.所以在这个结构体中定义了很多标识变量(有出生初始赋值),用于区别不同的数据包和减少重复多余的工作
+这个结构体用于存储一个数据流的相关信息,一个数据流可能会有很多数据包.所以在这个结构体中定义了很多标识变量(有初始赋值),用于区别不同的数据包和减少重复多余的工作
 ```C
     typedef struct ndpi_flow_struct {
       u_int16_t detected_protocol_stack[NDPI_PROTOCOL_HISTORY_SIZE];
