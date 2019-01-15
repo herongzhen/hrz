@@ -43,6 +43,17 @@ Usage:<br>
  -w<path>               |指定测试信息的输出文件<br>
  -h                     | help信息<br>
  -v<1|2|3>              |按级别进一步打印包的详细信息，分为1、2、3级<br>
+	
+分析网卡的数据包情况  
+```C
+sudo ./ndpiReader -i enp2s0 -p protos.txt -s 20 -w results.txt  
+```
+这条命令代表含义是:按照配置协议文件protos.txt,监听接口enp2s0的数据流20s,然后将结果保存到results.txt之中.
+根据已经配置好的协议,监听enp2s0网口的数据流20s,然后将结果保存到results.txt中
+
+提到的protos.txt是个协议配置文件,
+在这个文件中,我们可以自己配置子协议,打开protos.txt后,添加 `host:"www.baidu.com"@baidu`,只要http的host为www.baidu.com,就会被当作baidu协议.
+
 
 ## 四.ndpi的使用
 
