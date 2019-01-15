@@ -16,11 +16,11 @@ nDPI是一个从OpenDPI发展而来的DPI库，现在由ntop组织负责维护�
 
 首先下载所需代码库 :git clone https://github.com/ntop/nDPI.git  <br>
 i. 编译<br>
-./autogen.sh
-./configure
+./autogen.sh  
+./configure  
 make<br>
 ii. 测试<br>
-cd tests/
+cd tests/  
 ./do.sh<br>
 iii. 安装<br>
 make install (需要root权限）<br>
