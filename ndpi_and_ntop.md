@@ -154,7 +154,9 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
         2）根据ipv4和ipv6对flow中的packet分别进行初始化（flow->packet.iph和flow->packet.iphv6）
         3）通过`ndpi_detection_get_l4_internal`对报文的ipv4（ipv6）header进行检测，并且获取传输层协议信息。通过l4protocol变量进行传递，记录传输层协议号。
         4）根据l4protocol字段进行传输层的判别，如果是tcp（协议号是6）则对包内部的syn和ack等字段进行初步的检测。如果是udp（协议号是17），则计算出包的长度。初始化flow->packet当中的字段  
+	
   4、flow传输层信息的初始化  
+  
      这里主要通过报文获取传输层信息，比如在tcp协议中我们捕获到的报文是握手中的什么角色，是ack包还是其他的。这些信息将对检测提供一些数据。  
      1）首先通过src和dst参数初始化flow->src和flow->dst字段  
      2）通过ndpi_connection_tracking函数进行我们上述的工作。这里它判断的tcp握手的状态，并且通过flow->next_tcp_seq_nr数组对tcp序列进行了描述。
@@ -170,7 +172,7 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
           flow->l4.tcp.seen_ack = 1;}
 ```
 ndpi中通过flow->l4.tcp中的seen_syn、seen_syn_ack和seen_ack记录tcp的握手状态。然后根据分析报文中的syn和ack字段进行归类，为后期的检测提供数据基础。
-nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊的ndpi_flow_struct类型来表示一个TCP会话(这个数据结构还包含了“协议分析”部分数据)。为了便于分析完整的TCP请求,我们定义了一个自己的数据结构dpi_flow_t，ndpi_flow_struct作为它的一个成员。用伪代码表示分析过程：
+nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊的ndpi_flow_struct类型来表示一个TCP会话(这个数据结构还包含了“协议分析”部分数据)。为了便于分析完整的TCP请求,我们定义了一个自己的数据结构ndpi_flow_t，ndpi_flow_struct作为它的一个成员。用伪代码表示分析过程：
 
     1.收到数据包；
     2.提取源端口,目的端口,源IP地址,目的IP地址,经过hash计算组成唯一标识；
@@ -178,7 +180,7 @@ nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊�
     4.如果不包含,说明是第一次匹配到,初始化ndpi_flow_t对象,初始化它的成员ndpi_flow_struct类型.放到二叉树,此时传递到ndpi_detection_process_packet的flow参数就是ndpi_flow;
     5.如果包含,说明这个数据不是第一次被匹配到,那么就取出该元素,成员ndpi_flow就是ndpi_detection_process_packet的flow参数;
 
-代码体现在`get_ndpi_flow`函数;实现上我们会对目标、源端口排序再做hash;这是由于数据包是“相互通讯”的所以发送方、接收方是相对而言，否则识别到的可能是“一方”的数据。
+代码体现在`get_ndpi_flow`函数中;先对目标、源端口排序再做hash;这是由于数据包是“相互通讯”的所以发送方、接收方是相对而言，否则识别到的可能是“一方”的数据。
 
 调用完`ndpi_detection_process_packet`函数后我们需要检查返回值，如果它不等于NDPI_PROTOCOL_UNKNOWN证明就找到了协议类型。
 
@@ -187,6 +189,7 @@ nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊�
 
 ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册定义.在代码中用宏定义了所有能够支持的协议
 部分代码如下:
+  ```C
   typedef enum {
           NDPI_PROTOCOL_UNKNOWN      =0,
           NDPI_PROTOCOL_FTP_CONTROL  =1,
@@ -199,7 +202,7 @@ ndpi中,每一个支持的协议都用一个唯一的数字和一个名称注册
           NDPI_PROTOCOL_YAHOO        =70,
           NDPI_PROTOCOL_SINA         =200,
           }
-
+```
   
   具体完整代码可在nDPI/src/include/ndpi_protocol_ids.h中查看.
 
