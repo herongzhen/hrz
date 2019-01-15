@@ -141,7 +141,7 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
   ```
  1.检测包长度
  
-  这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用ndpi_int_reset_packet_protocol把flow内部的协议栈顶类型置为`UNKNOW`。并且清0协议栈信息字段，最后返回UNKNOW类型。
+  这里它通过检测包长度（packetlen），对包的可用性进行了测试。如果包长度没有20字节（ip数据报文至少20字节），则利用`ndpi_int_reset_packet_protocol`(在ndpi_main.c中有具体定义)把flow内部的协议栈顶类型置为`UNKNOW`。并且清0协议栈信息字段，最后返回UNKNOW类型。
  
  2、flow->packet的初始化
  
@@ -153,12 +153,11 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
         1）首先一个就是根据ndpi_packet_struct中的协议栈内容和描述信息，对flow的协议栈内容和描述信息进行了初始化。这部分通过内部的`ndpi_apply_flow_protocol_to_packet`函数进行了实现。
         2）根据ipv4和ipv6对flow中的packet分别进行初始化（flow->packet.iph和flow->packet.iphv6）
         3）通过`ndpi_detection_get_l4_internal`对报文的ipv4（ipv6）header进行检测，并且获取传输层协议信息。通过l4protocol变量进行传递，记录传输层协议号。
-        4）根据l4protocol字段进行传输层的判别，如果是tcp（协议号是6）则对包内部的syn和ack等字段进行初步的检测。如果是udp（协议号是17），则计算出包的长度。初始化flow->packet当中的字段
-  4、flow传输层信息的初始化
-  
-     这里主要通过报文获取传输层信息，比如在tcp协议中我们捕获到的报文是握手中的什么角色，是ack包还是其他的。这些信息将对检测提供一些数据。
-        1）首先通过src和dst参数初始化flow->src和flow->dst字段
-        2）通过ndpi_connection_tracking函数进行我们上述的工作。这里它判断的tcp握手的状态，并且通过flow->next_tcp_seq_nr数组对tcp序列进行了描述。
+        4）根据l4protocol字段进行传输层的判别，如果是tcp（协议号是6）则对包内部的syn和ack等字段进行初步的检测。如果是udp（协议号是17），则计算出包的长度。初始化flow->packet当中的字段  
+  4、flow传输层信息的初始化  
+     这里主要通过报文获取传输层信息，比如在tcp协议中我们捕获到的报文是握手中的什么角色，是ack包还是其他的。这些信息将对检测提供一些数据。  
+     1）首先通过src和dst参数初始化flow->src和flow->dst字段  
+     2）通过ndpi_connection_tracking函数进行我们上述的工作。这里它判断的tcp握手的状态，并且通过flow->next_tcp_seq_nr数组对tcp序列进行了描述。
 ```C
     if (tcph->syn != 0 && tcph->ack == 0 && flow->l4.tcp.seen_syn == 0 && flow->l4.tcp.seen_syn_ack == 0
     	&& flow->l4.tcp.seen_ack == 0) {
