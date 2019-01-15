@@ -70,9 +70,9 @@ sudo ./ndpiReader -i enp2s0 -p protos.txt -s 20 -w results.txt
 
 ###  2.ndpi的工作流程
 
-&nbsp;&nbsp;首先是程序的初始化，调用`setupDetection()`函数.<br>
+&nbsp;&nbsp;首先是程序的初始化;<br>
 &nbsp;&nbsp;接下来会开启线程调用libpcap库函数对通过电脑网卡的数据包进行抓取，或者读取传入的.pcap文件.<br> 
-&nbsp;&nbsp;接下来对每一个数据包（数据包(packet)和数据流(flow)，一个数据流中可能会有很多个数据包，就像我们申请一个网页请求，由于页面信息很大，所以会分成很多个数据包来传输，但这些数据包同属于一个数据流），首先对其数据链路层和IP层进行拆包分析pcap_packet_callback()函数，判断是否为基于IP协议等，并获得其源目的IP、协议类型等。<br> 
+&nbsp;&nbsp;接下来对每一个数据包（数据包(packet)和数据流(flow)，一个数据流中可能会有很多个数据包，由于页面信息很大，所以会分成很多个数据包来传输，但这些数据包同属于一个数据流），首先对其数据链路层和IP层进行拆包分析，判断是否为基于IP协议等，并获得其源目的IP、协议类型等。<br> 
 再接下来调用`packet_processing()`函数，进行传输层分析。在进行传输层分析时调用了`get_ndpi_flow()`函数，该函数返回ndpi_flow这个结构体。在`get_ndpi_flow()`函数中获取传输层的信息如源目的端口等信息。然后根据（源目的IP、源目的端口、协议类型(tcp\udp)）这五个元素计算出idx。
 ```C
     idx = (vlan_id + lower_ip + upper_ip + iph->protocol + lower_port + upper_port) % NUM_ROOTS;
@@ -80,7 +80,12 @@ sudo ./ndpiReader -i enp2s0 -p protos.txt -s 20 -w results.txt
 ```
 程序定义了一个数组，用来记录所有的数据流，而idx是用来标识不同的数据流，根据前面解析出数据包的五元组计算idx，然后查询 ndpi_flows_root[]这个数组在索引为idx位置是否已经有了记录。<br>
 一般，对于一个数据流而言，该流的第一个数据包查询时,`ndpi_flows_root[idx]`为空，则建立一个新的ndpi_flow对象并保存到该位置处；等抓到该数据流的后续数据包时，因为属于同一个流(即idx相同)，所以`ndpi_flows_root[idx]`不为空，则直接返回已经有的ndpi_flow即可。至此，我们得到了`ndpi_flow`这个结构体.<br>
-接下来函数会调用`ndpi_detection_process_packet()`这个函数进行应用层分析。这也是应用协议分析的主体函数.这个函数传进的参数是ndpi_flow_struct(下面记为flow)，函数首先会对flow->packet即对packet这个结构体进行初始化。因为对于同一个流flow而言，在该结构体中有些变量在第一个数据包时已经初始化了，这些变量可能在特定情况下才会发生改变，比如检测出了协议等；而对每一个数据包，flow中必须要变的就是flow->packet中的信息。接下来会调用`ndpi_connection_tracking()`函数，这个函数的主要作用是判断这个包的‘位置’,这个函数在数据包重组等功能中会有很重要的作用。部分代码如下`   
+接下来函数会调用`ndpi_detection_process_packet()`这个函数进行应用层分析。这也是应用协议分析的主体函数.这个函数传进的参数是ndpi_flow_struct(下面记为flow)，函数首先会对flow->packet即对packet这个结构体进行初始化。因为对于同一个流flow而言，在该结构体中有些变量在第一个数据包时已经初始化了，这些变量可能在特定情况下才会发生改变，比如检测出了协议等；而对每一个数据包，flow中必须要变的就是flow->packet中的信息。接下来会调用`ndpi_connection_tracking()`函数，这个函数的主要作用是判断这个包的‘位置’,这个函数在数据包重组等功能中会有很重要的作用。  
+部分代码如下`   
+```C
+    void ndpi_connection_racking(struct ndpi_detection_module_struct *ndpi_struct,
+                                    struct ndpi_flow_struct *flow)
+```
 ```C
     if(tcph->syn != 0 && tcph->ack == 0 && flow->l4.tcp.seen_syn == 0 && flow->l4.tcp.seen_syn_ack == 0
            && flow->l4.tcp.seen_ack == 0) {
