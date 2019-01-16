@@ -170,19 +170,6 @@ ndpi内部提供供了ndpi_detection_process_packet函数作为协议检测的AP
     if (tcph->syn == 0 && tcph->ack == 1 && flow->l4.tcp.seen_syn == 1 && flow->l4.tcp.seen_syn_ack == 1
     	&& flow->l4.tcp.seen_ack == 0) {
           flow->l4.tcp.seen_ack = 1;}
-```
-ndpi中通过flow->l4.tcp中的seen_syn、seen_syn_ack和seen_ack记录tcp的握手状态。然后根据分析报文中的syn和ack字段进行归类，为后期的检测提供数据基础。
-nDPI内部不会记录完整的TCP数据包，而是用一个定义非常模糊的ndpi_flow_struct类型来表示一个TCP会话(这个数据结构还包含了“协议分析”部分数据)。为了便于分析完整的TCP请求,我们定义了一个自己的数据结构ndpi_flow_t，ndpi_flow_struct作为它的一个成员。用伪代码表示分析过程：
-
-    1.收到数据包；
-    2.提取源端口,目的端口,源IP地址,目的IP地址,经过hash计算组成唯一标识；
-    3.查找二叉树中是否包含这个数据
-    4.如果不包含,说明是第一次匹配到,初始化ndpi_flow_t对象,初始化它的成员ndpi_flow_struct类型.放到二叉树,此时传递到ndpi_detection_process_packet的flow参数就是ndpi_flow;
-    5.如果包含,说明这个数据不是第一次被匹配到,那么就取出该元素,成员ndpi_flow就是ndpi_detection_process_packet的flow参数;
-
-代码体现在`get_ndpi_flow`函数中;先对目标、源端口排序再做hash;这是由于数据包是“相互通讯”的所以发送方、接收方是相对而言，否则识别到的可能是“一方”的数据。
-
-调用完`ndpi_detection_process_packet`函数后我们需要检查返回值，如果它不等于NDPI_PROTOCOL_UNKNOWN证明就找到了协议类型。
 
     
 ###  4.ndpi如何定义一个协议
