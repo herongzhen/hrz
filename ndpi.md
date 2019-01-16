@@ -71,9 +71,9 @@ sudo ./ndpiReader -i enp2s0 -p protos.txt -s 20 -w results.txt
 ###  2.ndpi的工作流程
 
 &nbsp;&nbsp;首先是程序的初始化;<br>
-&nbsp;&nbsp;接下来会开启线程调用libpcap库函数对通过电脑网卡的数据包进行抓取，或者读取传入的.pcap文件.<br> 
+&nbsp;&nbsp;接下来会开启线程调用libpcap库函数对通过网卡的数据包进行抓取，或者读取传入的.pcap文件.<br> 
 &nbsp;&nbsp;接下来对每一个数据包（数据包(packet)和数据流(flow)，一个数据流中可能会有很多个数据包，由于页面信息很大，所以会分成很多个数据包来传输，但这些数据包同属于一个数据流），首先对其数据链路层和IP层进行拆包分析，判断是否为基于IP协议等，并获得其源目的IP、协议类型等。<br> 
-再接下来调用`packet_processing()`函数，进行传输层分析。在进行传输层分析时调用了`get_ndpi_flow()`函数，该函数返回ndpi_flow这个结构体。在`get_ndpi_flow()`函数中获取传输层的信息如源目的端口等信息。然后根据（源目的IP、源目的端口、协议类型(tcp\udp)）这五个元素计算出idx。
+再接下来调用`packet_processing()`函数(在ndpi_util.c中有具体定义)，进行传输层分析。在进行传输层分析时调用了`get_ndpi_flow()`函数，该函数返回ndpi_flow这个结构体。在`get_ndpi_flow()`函数中获取传输层的信息如源目的端口等信息。然后根据（源目的IP、源目的端口、协议类型(tcp\udp)）这五个元素计算出idx。
 ```C
     idx = (vlan_id + lower_ip + upper_ip + iph->protocol + lower_port + upper_port) % NUM_ROOTS;
     ret = ndpi_tfind(&flow, &ndpi_thread_info[thread_id].ndpi_flows_root[idx], node_cmp);
