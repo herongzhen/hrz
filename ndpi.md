@@ -83,7 +83,7 @@ sudo ./ndpiReader -i enp2s0 -p protos.txt -s 20 -w results.txt
 接下来函数会调用`ndpi_detection_process_packet()`这个函数进行应用层分析。这也是应用协议分析的主体函数.这个函数传进的参数是ndpi_flow_struct(下面记为flow)，函数首先会对flow->packet即对packet这个结构体进行初始化。因为对于同一个流flow而言，在该结构体中有些变量在第一个数据包时已经初始化了，这些变量可能在特定情况下才会发生改变，比如检测出了协议等；而对每一个数据包，flow中必须要变的就是flow->packet中的信息。接下来会调用`ndpi_connection_tracking()`函数， 
 部分代码如下`   
 ```C
-    void ndpi_connection_racking(struct ndpi_detection_module_struct *ndpi_struct,
+    void ndpi_connection_tracking(struct ndpi_detection_module_struct *ndpi_struct,
                                     struct ndpi_flow_struct *flow)
 ```
 ```C
